@@ -30,9 +30,11 @@ jobs:
 
     - name: Install dependencies
       run: npm install
+      working-directory: ./PGA-PI
 
     - name: Build project
       run: npm run build
+      working-directory: ./PGA-PI
 
     # Versionamento Semântico
     - name: Install semver
@@ -137,6 +139,7 @@ jobs:
         else
           echo "Versão já está em $CURRENT_VERSION, não é necessário atualizar."
         fi
+      working-directory: ./PGA-PI
 
     - name: Commit and push new version
       if: (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop') && env.new_version != ''
@@ -145,7 +148,7 @@ jobs:
       run: |
         git config --global user.name 'github-actions'
         git config --global user.email 'github-actions@github.com'
-        git add package.json
+        git add PGA-PI/package.json
         git commit -m "chore(release): version ${{ env.new_version }}" || echo "No changes to commit"
         
         # Check if tag already exists before creating
@@ -167,6 +170,6 @@ jobs:
       if: github.ref == 'refs/heads/main'
       uses: JamesIves/github-pages-deploy-action@v4
       with:
-        folder: dist # Build output folder
+        folder: PGA-PI/dist # Build output folder
         branch: gh-pages # The branch to deploy to
         token: ${{ secrets.GH_TOKEN }} 
