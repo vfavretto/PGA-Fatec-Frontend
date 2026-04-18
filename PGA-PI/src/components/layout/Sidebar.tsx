@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { logoImage, logoMini } from "@/assets";
 import { useAuth } from "../../hooks/useAuth";
+import { usePermissions } from "@/hooks/usePermissions";
 import { 
   Home, 
   ClipboardList, 
@@ -21,29 +22,45 @@ export const Sidebar = ({ isExpanded, toggleSidebar }: SidebarProps): JSX.Elemen
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const {
+    isRegionalOnly,
+    canEditProjects,
+    canManageSystemConfig,
+    canViewAudit,
+    canManageUnitPeople,
+  } = usePermissions();
 
-  const navItems = [
+  const canAccessSettings =
+    canManageSystemConfig || canViewAudit || canManageUnitPeople;
+
+  const allNavItems = [
     {
       label: "Visão Geral",
       path: `${BASE_ROUTE}dashboard`,
       icon: Home,
+      show: true,
     },
     {
       label: "Projetos",
       path: `${BASE_ROUTE}projects/list`,
       icon: ClipboardList,
+      show: !isRegionalOnly,
     },
     {
       label: "Criar Formulário",
       path: `${BASE_ROUTE}projects`,
       icon: PlusCircle,
+      show: canEditProjects,
     },
     {
       label: "Configurações",
       path: `${BASE_ROUTE}settings`,
       icon: Settings,
-    }
+      show: canAccessSettings,
+    },
   ];
+
+  const navItems = allNavItems.filter((item) => item.show);
 
   // Previne o comportamento padrão e navega programaticamente
   const handleNavigation = (e: React.MouseEvent, path: string) => {

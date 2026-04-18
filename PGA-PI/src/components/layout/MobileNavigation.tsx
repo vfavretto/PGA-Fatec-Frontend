@@ -9,6 +9,7 @@ import {
   X
 } from 'lucide-react';
 import { useMobile } from '@/hooks/useMobile';
+import { usePermissions } from '@/hooks/usePermissions';
 import { BASE_ROUTE } from '@lib/config';
 
 interface MobileNavigationProps {
@@ -22,29 +23,43 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
 }) => {
   const location = useLocation();
   const { isMobile } = useMobile();
+  const {
+    isRegionalOnly,
+    canEditProjects,
+    canManageSystemConfig,
+    canViewAudit,
+    canManageUnitPeople,
+  } = usePermissions();
+
+  const canAccessSettings =
+    canManageSystemConfig || canViewAudit || canManageUnitPeople;
 
   const navItems = [
     {
       label: "Visão Geral",
       path: `${BASE_ROUTE}dashboard`,
       icon: Home,
+      show: true,
     },
     {
       label: "Projetos",
       path: `${BASE_ROUTE}projects/list`,
       icon: ClipboardList,
+      show: !isRegionalOnly,
     },
     {
       label: "Criar Formulário",
       path: `${BASE_ROUTE}projects`,
       icon: PlusCircle,
+      show: canEditProjects,
     },
     {
       label: "Configurações",
       path: `${BASE_ROUTE}settings`,
       icon: Settings,
-    }
-  ];
+      show: canAccessSettings,
+    },
+  ].filter((item) => item.show);
 
   const handleNavigation = (path: string) => {
     onClose();

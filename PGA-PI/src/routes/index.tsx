@@ -11,6 +11,7 @@ import { SelectAnexo } from "@/features/anexos/pages/SelectAnexo";
 import { SelectSubAnexo } from "@/features/anexos/pages/SelectSubAnexo";
 import { BASE_ROUTE } from "@lib/config";
 import { AnexoForm } from "@features/anexos/pages/AnexoForm";
+import type { TipoUsuario } from "@/features/auth/services/authService";
 
 // Componente para rotas protegidas
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
@@ -22,6 +23,33 @@ const PrivateRoute = ({ children }: { children: JSX.Element }) => {
 
   return children;
 };
+
+// Componente para rotas protegidas por papel
+const RoleRoute = ({
+  allow,
+  children,
+}: {
+  allow: TipoUsuario[];
+  children: JSX.Element;
+}) => {
+  const { user } = useAuth();
+  const role = user?.tipo_usuario as TipoUsuario | undefined;
+
+  if (!role || !allow.includes(role)) {
+    return <Navigate to={`${BASE_ROUTE}dashboard`} replace />;
+  }
+
+  return children;
+};
+
+const NON_REGIONAL_ROLES: TipoUsuario[] = [
+  "Administrador",
+  "CPS",
+  "Diretor",
+  "Coordenador",
+  "Administrativo",
+  "Docente",
+];
 
 export const Router = (): JSX.Element => {
   const { isAuthenticated } = useAuth();
@@ -59,15 +87,43 @@ export const Router = (): JSX.Element => {
         <Route path="dashboard" element={<Home />} />
 
         <Route path="projects">
-          <Route index element={<SelectAnexo />} />
+          <Route
+            index
+            element={
+              <RoleRoute allow={NON_REGIONAL_ROLES}>
+                <SelectAnexo />
+              </RoleRoute>
+            }
+          />
           <Route path="list" element={<Projects />} />
-          <Route path="new" element={<AddProject />} />
-          <Route path="anexo/:anexoId" element={<SelectSubAnexo />} />
+          <Route
+            path="new"
+            element={
+              <RoleRoute allow={NON_REGIONAL_ROLES}>
+                <AddProject />
+              </RoleRoute>
+            }
+          />
+          <Route
+            path="anexo/:anexoId"
+            element={
+              <RoleRoute allow={NON_REGIONAL_ROLES}>
+                <SelectSubAnexo />
+              </RoleRoute>
+            }
+          />
           <Route path="anexo/:anexoId/:subId" element={<Projects />} />
         </Route>
 
         <Route path="anexos">
-          <Route path="new" element={<AnexoForm />} />
+          <Route
+            path="new"
+            element={
+              <RoleRoute allow={NON_REGIONAL_ROLES}>
+                <AnexoForm />
+              </RoleRoute>
+            }
+          />
         </Route>
 
         <Route path="settings" element={<Settings />} />

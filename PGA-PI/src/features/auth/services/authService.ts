@@ -6,15 +6,36 @@ export interface LoginCredentials {
   senha: string;
 }
 
+export type TipoUsuario =
+  | "Administrador"
+  | "CPS"
+  | "Regional"
+  | "Diretor"
+  | "Coordenador"
+  | "Administrativo"
+  | "Docente";
+
+export interface UnidadeVinculo {
+  unidade_id: number;
+  unidade?: {
+    unidade_id: number;
+    codigo_fnnn?: string;
+    nome_completo?: string;
+  };
+}
+
 export interface UserData {
   pessoa_id: number;
   email: string;
   nome: string;
+  tipo_usuario?: TipoUsuario;
+  unidades?: UnidadeVinculo[];
 }
 
 export interface LoginResponse {
   access_token: string;
-  user: UserData;
+  refresh_token?: string;
+  user?: UserData;
 }
 
 /** Função de autenticação */
@@ -37,11 +58,36 @@ export const authService = {
       const data: LoginResponse = response.data;
       const access_token: string = data.access_token;
 
-      const userData = parseJwt(access_token);
       localStorage.setItem("accessToken", access_token);
+
+      const parsed = parseJwt(access_token);
+
+      let userData: UserData = {
+        pessoa_id: parsed.pessoa_id,
+        email: parsed.email,
+        nome: parsed.nome,
+        tipo_usuario: parsed.tipo_usuario,
+      };
+
+      // Buscar detalhes da pessoa (inclui vínculo de unidades) após login
+      try {
+        const detail = await api.get(`${API_ENDPOINTS.USERS}/${parsed.pessoa_id}`);
+        const pessoa = detail.data ?? {};
+        userData = {
+          ...userData,
+          nome: pessoa.nome ?? userData.nome,
+          email: pessoa.email ?? userData.email,
+          tipo_usuario: pessoa.tipo_usuario ?? userData.tipo_usuario,
+          unidades: pessoa.unidades ?? [],
+        };
+      } catch (err) {
+        // Se falhar, segue com os dados do JWT
+        console.warn("Não foi possível carregar vínculos do usuário:", err);
+      }
+
       localStorage.setItem("userData", JSON.stringify(userData));
 
-      return data.user;
+      return userData;
     } catch (error) {
       console.error("Erro durante o login:", error);
       throw error;
@@ -72,11 +118,18 @@ export const authService = {
   },
 };
 
+interface JwtPayload {
+  pessoa_id: number;
+  email: string;
+  nome: string;
+  tipo_usuario?: TipoUsuario;
+}
+
 /** Função auxiliar para decodificar o token JWT
  * @param token - O token JWT a ser decodificado
  * @returns Objeto com os dados do usuário
  */
-function parseJwt(token: string): UserData {
+function parseJwt(token: string): JwtPayload {
   try {
     const base64Url = token.split(".")[1];
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");

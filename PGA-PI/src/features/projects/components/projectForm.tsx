@@ -25,6 +25,8 @@ import { processStepService } from "@/services/processStepService";
 import { anexoService } from "@/features/anexos/services/anexoService";
 import { projetoPessoaService } from "@/services/projectPersonService";
 import { pgaService } from "@/services/pgaService";
+import { usePermissions } from "@/hooks/usePermissions";
+import { Lock } from "lucide-react";
 
 // --- Utility Functions ---
 const formatCurrency = (value: string): string => {
@@ -49,6 +51,7 @@ interface ProjectFormProps {
 
 const ProjectForm: React.FC<ProjectFormProps> = ({ eixoSelecionado }) => {
   const { user } = useAuth();
+  const { canEditProjects } = usePermissions();
 
   const [eixosTematicos, setEixosTematicos] = useState<any[]>([]);
   const [loadingEixos, setLoadingEixos] = useState(false);
@@ -519,6 +522,20 @@ const ProjectForm: React.FC<ProjectFormProps> = ({ eixoSelecionado }) => {
       alert("Erro ao registrar projeto. Verifique os dados e tente novamente.");
     }
   };
+
+  if (!canEditProjects) {
+    return (
+      <div className="p-6 bg-white border border-gray-200 rounded-xl shadow-sm text-center">
+        <Lock className="h-10 w-10 text-[#ae0f0a] mx-auto mb-3" />
+        <h2 className="text-lg font-semibold text-gray-800 mb-1">
+          Sem permissão para editar projetos
+        </h2>
+        <p className="text-sm text-gray-600">
+          Seu perfil não tem permissão para criar ou editar projetos do PGA.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form

@@ -4,10 +4,11 @@ import { Users, Target, List, BarChart3, FileText, AlertCircle, Clock, ShieldChe
 interface PgaTabSelectorProps {
   activeTab: string;
   onTabChange: (value: string) => void;
+  allowedTabs?: string[];
 }
 
-export const PgaTabSelector = ({ activeTab, onTabChange }: PgaTabSelectorProps) => {
-  const tabs = [
+export const PgaTabSelector = ({ activeTab, onTabChange, allowedTabs }: PgaTabSelectorProps) => {
+  const allTabs = [
     { id: "pessoas", label: "Pessoas", icon: Users },
     { id: "eixos", label: "Eixos Temáticos", icon: Target },
     { id: "temas", label: "Temas", icon: List },
@@ -17,6 +18,10 @@ export const PgaTabSelector = ({ activeTab, onTabChange }: PgaTabSelectorProps) 
     { id: "cargahoraria", label: "Carga Horária", icon: Clock },
     { id: "auditoria", label: "Auditoria", icon: ShieldCheck },
   ];
+
+  const tabs = allowedTabs
+    ? allTabs.filter((t) => allowedTabs.includes(t.id))
+    : allTabs;
 
   return (
     <TabsList className="mb-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-2 sm:gap-3 bg-transparent w-full">

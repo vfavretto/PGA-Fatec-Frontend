@@ -104,18 +104,37 @@ export interface EtapaProjeto {
   numero_ref?: string;
 }
 
+export enum StatusPGA {
+  EmElaboracao = "EmElaboracao",
+  Submetido = "Submetido",
+  Aprovado = "Aprovado",
+  Reprovado = "Reprovado",
+}
+
 export interface PgaComUnidade {
   pga_id: number;
   ano: number;
   unidade_id: number;
-  status: string;
+  status: StatusPGA | string;
   versao?: string;
+  parecer_regional?: string | null;
+  data_parecer_regional?: string | null;
+  regional_responsavel_id?: number | null;
   unidade?: {
     unidade_id: number;
     codigo_fnnn: string;
     nome_completo: string;
     diretor_nome?: string;
   };
+  regionalResponsavel?: {
+    pessoa_id: number;
+    nome: string;
+    email?: string;
+  } | null;
+  usuarioCriacao?: {
+    pessoa_id: number;
+    nome: string;
+  } | null;
 }
 
 export interface AcaoProjeto {

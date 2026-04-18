@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Tabs, TabsContent } from "../../../components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../components/ui/card";
 import { Toaster } from "../../../components/ui/toaster";
@@ -11,23 +11,79 @@ import { EntregaveisConfig } from "../components/EntregaveisConfig";
 import { SituacoesConfig } from "../components/SituacoesConfig";
 import { CargaHorariaConfig } from "../components/CargaHorariaConfig";
 import { PgaTabSelector } from "../components/PgaTabSelector";
-import { Cog, Settings as SettingsIcon, Calendar, History } from "lucide-react";
+import { Cog, Settings as SettingsIcon, Calendar, History, Lock } from "lucide-react";
 import { AuditHistoryConfig } from '../components/AuditHistoryConfig';
 import { PGAHistoryViewer } from '../../dashboard/components/PGAHistoryViewer';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export const Settings = (): JSX.Element => {
-  const [activeTab, setActiveTab] = useState("pessoas");
+  const {
+    canManageSystemConfig,
+    canViewAudit,
+    canManageUnitPeople,
+    isRegionalOnly,
+  } = usePermissions();
+
+  const allowedTabs = useMemo(() => {
+    const tabs: string[] = [];
+    if (canManageSystemConfig) {
+      tabs.push(
+        "pessoas",
+        "eixos",
+        "temas",
+        "prioridades",
+        "entregaveis",
+        "situacoes",
+        "cargahoraria",
+      );
+    } else if (canManageUnitPeople) {
+      tabs.push("pessoas");
+    }
+    if (canViewAudit) {
+      tabs.push("auditoria");
+    }
+    return tabs;
+  }, [canManageSystemConfig, canViewAudit, canManageUnitPeople]);
+
+  const defaultTab = isRegionalOnly
+    ? "auditoria"
+    : allowedTabs[0] ?? "pessoas";
+
+  const [activeTab, setActiveTab] = useState(defaultTab);
   const [viewingHistory, setViewingHistory] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // Anos disponíveis
   const availableYears = Array.from(
-    { length: 5 }, 
+    { length: 5 },
     (_, i) => new Date().getFullYear() - i
   );
 
-  // 🔥 ADICIONAR LOG PARA DEBUG
-  console.log('🔍 Settings - selectedYear:', selectedYear, 'viewingHistory:', viewingHistory);
+  if (allowedTabs.length === 0) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 max-w-3xl">
+        <Card className="shadow-[0px_0px_25px_#00000026] rounded-xl border-t-4 border-t-[#ae0f0a]">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <Lock className="h-6 w-6 text-[#ae0f0a]" />
+              <div>
+                <CardTitle className="text-xl">Sem acesso às configurações</CardTitle>
+                <CardDescription>
+                  Seu perfil não possui permissão para acessar esta área.
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-gray-600">
+              Se você acredita que deveria ter acesso, entre em contato com o
+              administrador do sistema.
+            </p>
+          </CardContent>
+        </Card>
+        <Toaster />
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 max-w-7xl">
@@ -42,7 +98,7 @@ export const Settings = (): JSX.Element => {
           </div>
 
           <p className="text-gray-600 text-sm sm:text-base max-w-xs sm:max-w-md md:max-w-2xl mx-auto leading-relaxed">
-            {viewingHistory 
+            {viewingHistory
               ? `Visualizando configurações históricas de ${selectedYear} - Estado das configurações conforme registrado neste ano`
               : "Gerencie os dados básicos utilizados no sistema do Plano de Gestão Anual. Estas configurações serão utilizadas em todo o sistema."
             }
@@ -62,7 +118,7 @@ export const Settings = (): JSX.Element => {
                   {viewingHistory ? `Configurações Históricas ${selectedYear}` : 'Gerenciar Configurações do Sistema'}
                 </CardTitle>
                 <CardDescription className="mt-1 sm:mt-2 text-sm sm:text-base leading-relaxed">
-                  {viewingHistory 
+                  {viewingHistory
                     ? 'Navegue pelas seções para ver como as configurações estavam organizadas neste período'
                     : 'Utilize as abas abaixo para configurar os diferentes aspectos do sistema'
                   }
@@ -70,93 +126,107 @@ export const Settings = (): JSX.Element => {
               </div>
             </div>
 
-            {/* Lado direito - Controles de histórico responsivos */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 flex-shrink-0" />
-                <select
-                  value={selectedYear}
-                  onChange={(e) => {
-                    const newYear = parseInt(e.target.value);
-                    console.log('📅 Mudando ano para:', newYear); // 🔥 DEBUG
-                    setSelectedYear(newYear);
-                  }}
-                  className="border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 bg-white text-xs sm:text-sm min-w-[80px] sm:min-w-[100px] flex-1 sm:flex-none"
+            {/* Lado direito - Controles de histórico (apenas para quem pode ver auditoria) */}
+            {canViewAudit && (
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 bg-white p-3 sm:p-4 rounded-lg shadow-sm border border-gray-200">
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-gray-500 flex-shrink-0" />
+                  <select
+                    value={selectedYear}
+                    onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                    className="border border-gray-300 rounded-md px-2 sm:px-3 py-1.5 sm:py-2 bg-white text-xs sm:text-sm min-w-[80px] sm:min-w-[100px] flex-1 sm:flex-none"
+                  >
+                    {availableYears.map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <Button
+                  variant={viewingHistory ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewingHistory(!viewingHistory)}
+                  className={`w-full sm:w-auto text-xs sm:text-sm ${viewingHistory ? "bg-[#ae0f0a] hover:bg-[#8d0c08]" : ""}`}
                 >
-                  {availableYears.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
+                  <History className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
+                  <span className="truncate">{viewingHistory ? 'Ver Atual' : 'Ver Histórico'}</span>
+                </Button>
               </div>
-              
-              <Button
-                variant={viewingHistory ? "default" : "outline"}
-                size="sm"
-                onClick={() => {
-                  console.log('🔄 Toggling viewingHistory:', !viewingHistory); // 🔥 DEBUG
-                  setViewingHistory(!viewingHistory);
-                }}
-                className={`w-full sm:w-auto text-xs sm:text-sm ${viewingHistory ? "bg-[#ae0f0a] hover:bg-[#8d0c08]" : ""}`}
-              >
-                <History className="h-3 w-3 sm:h-4 sm:w-4 mr-1 flex-shrink-0" />
-                <span className="truncate">{viewingHistory ? 'Ver Atual' : 'Ver Histórico'}</span>
-              </Button>
-            </div>
+            )}
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-4 sm:p-6 lg:p-8">
-          {/* Conteúdo condicional */}
           {viewingHistory ? (
             <div className="space-y-4">
-              <PGAHistoryViewer 
-                pgaId={0} 
-                ano={selectedYear} 
-                key={`history-${selectedYear}`} // 🔥 FORÇA RE-RENDER
+              <PGAHistoryViewer
+                pgaId={0}
+                ano={selectedYear}
+                key={`history-${selectedYear}`}
               />
             </div>
           ) : (
             <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <PgaTabSelector activeTab={activeTab} onTabChange={setActiveTab} />
-              
-              <div className="space-y-0">
-                <TabsContent value="pessoas" isActive={activeTab === "pessoas"}>
-                  <PessoasConfig />
-                </TabsContent>
-                
-                <TabsContent value="eixos" isActive={activeTab === "eixos"}>
-                  <EixosConfig />
-                </TabsContent>
-                
-                <TabsContent value="temas" isActive={activeTab === "temas"}>
-                  <TemasConfig />
-                </TabsContent>
-                
-                <TabsContent value="prioridades" isActive={activeTab === "prioridades"}>
-                  <PrioridadesConfig />
-                </TabsContent>
-                
-                <TabsContent value="entregaveis" isActive={activeTab === "entregaveis"}>
-                  <EntregaveisConfig />
-                </TabsContent>
-                
-                <TabsContent value="situacoes" isActive={activeTab === "situacoes"}>
-                  <SituacoesConfig />
-                </TabsContent>
-                
-                <TabsContent value="cargahoraria" isActive={activeTab === "cargahoraria"}>
-                  <CargaHorariaConfig />
-                </TabsContent>
+              <PgaTabSelector
+                activeTab={activeTab}
+                onTabChange={setActiveTab}
+                allowedTabs={allowedTabs}
+              />
 
-                <TabsContent value="auditoria" isActive={activeTab === "auditoria"}>
-                  <AuditHistoryConfig selectedYear={selectedYear} />
-                </TabsContent>
+              <div className="space-y-0">
+                {allowedTabs.includes("pessoas") && (
+                  <TabsContent value="pessoas" isActive={activeTab === "pessoas"}>
+                    <PessoasConfig />
+                  </TabsContent>
+                )}
+
+                {allowedTabs.includes("eixos") && (
+                  <TabsContent value="eixos" isActive={activeTab === "eixos"}>
+                    <EixosConfig />
+                  </TabsContent>
+                )}
+
+                {allowedTabs.includes("temas") && (
+                  <TabsContent value="temas" isActive={activeTab === "temas"}>
+                    <TemasConfig />
+                  </TabsContent>
+                )}
+
+                {allowedTabs.includes("prioridades") && (
+                  <TabsContent value="prioridades" isActive={activeTab === "prioridades"}>
+                    <PrioridadesConfig />
+                  </TabsContent>
+                )}
+
+                {allowedTabs.includes("entregaveis") && (
+                  <TabsContent value="entregaveis" isActive={activeTab === "entregaveis"}>
+                    <EntregaveisConfig />
+                  </TabsContent>
+                )}
+
+                {allowedTabs.includes("situacoes") && (
+                  <TabsContent value="situacoes" isActive={activeTab === "situacoes"}>
+                    <SituacoesConfig />
+                  </TabsContent>
+                )}
+
+                {allowedTabs.includes("cargahoraria") && (
+                  <TabsContent value="cargahoraria" isActive={activeTab === "cargahoraria"}>
+                    <CargaHorariaConfig />
+                  </TabsContent>
+                )}
+
+                {allowedTabs.includes("auditoria") && (
+                  <TabsContent value="auditoria" isActive={activeTab === "auditoria"}>
+                    <AuditHistoryConfig selectedYear={selectedYear} />
+                  </TabsContent>
+                )}
               </div>
             </Tabs>
           )}
         </CardContent>
       </Card>
-      
+
       <Toaster />
     </div>
   );

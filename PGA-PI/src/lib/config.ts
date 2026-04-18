@@ -17,4 +17,5 @@ export const API_ENDPOINTS = {
   PROJECT_PERSON: `${API_URL}/project-person`,
   PGA: `${API_URL}/pga`,
   UNITS: `${API_URL}/unit`,
+  REGIONAL: `${API_URL}/regional`,
 };

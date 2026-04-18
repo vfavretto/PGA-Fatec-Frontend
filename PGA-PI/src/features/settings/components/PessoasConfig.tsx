@@ -14,10 +14,17 @@ import { TipoUsuario, User } from "@/types/api";
 import { accessRequestService, userService, type CreateUserData } from "@/services/commonServices";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context/AuthContext";
+import { usePermissions } from "@/hooks/usePermissions";
 
 export const PessoasConfig: React.FC = () => {
   const { user } = useAuth();
-  console.log("Usuario logado:", user); // Debug
+  const {
+    isAdminOrCps,
+    isDiretor,
+    canManageUnitPeople,
+    canManageSystemConfig,
+    unidadeId: userUnidadeId,
+  } = usePermissions();
   
   const [pessoas, setPessoas] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
@@ -33,32 +40,23 @@ export const PessoasConfig: React.FC = () => {
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
   const [loadingRequests, setLoadingRequests] = useState(false);
 
-  // O ID mockado (1) está bom para testes, mantenha essa abordagem
-  const unidadeId = 1; // ID mockado para testes - futuramente virá da URL
+  // Unidade do usuário atual (Diretor/Coordenador) usada como fallback para criação
+  const unidadeId = userUnidadeId ?? 1;
 
   // Carregar pessoas do banco
   const loadPessoas = useCallback(async () => {
     if (!user) return;
-    
-    console.log("Carregando pessoas..."); // Debug
+
     setLoading(true);
     try {
       let pessoasData: User[] = [];
-      
-      // Verificar se o usuário é admin/CPS
-      const userTipo = (user as any)?.tipo_usuario || (user as any)?.tipoUsuario;
-      
-      // Se for administrador, pode ver todas as pessoas
-      if (userTipo === TipoUsuario.ADMINISTRADOR || userTipo === TipoUsuario.CPS) {
-        console.log("Carregando todas as pessoas (admin/cps)"); // Debug
+
+      if (isAdminOrCps) {
         pessoasData = await userService.getAll();
       } else {
-        // Usar o ID da unidade mockado em vez de tentar pegar do usuário
-        console.log("Carregando pessoas da unidade:", unidadeId); // Debug
         pessoasData = await userService.getByUnidade(unidadeId);
       }
-      
-      console.log("Pessoas carregadas:", pessoasData); // Debug
+
       setPessoas(pessoasData);
     } catch (error) {
       console.error('Erro ao carregar pessoas:', error);
@@ -67,12 +65,12 @@ export const PessoasConfig: React.FC = () => {
         title: "Erro",
         description: "Não foi possível carregar a lista de pessoas"
       });
-      
+
       setPessoas([]);
     } finally {
       setLoading(false);
     }
-  }, [user]);
+  }, [user, isAdminOrCps, unidadeId]);
 
   // Função para carregar solicitações de acesso
   const loadAccessRequests = useCallback(async () => {
@@ -124,9 +122,14 @@ export const PessoasConfig: React.FC = () => {
 
     setLoading(true);
     try {
+      // Diretor sempre envia unidade_id da própria unidade
+      const unidadeDaPessoa = isDiretor
+        ? unidadeId
+        : novaPessoa.unidade_id || unidadeId;
+
       const dadosPessoa = {
         ...novaPessoa,
-        unidade_id: novaPessoa.unidade_id || unidadeId // Usar o ID mockado
+        unidade_id: unidadeDaPessoa,
       };
 
       const novaPessoaCriada = await userService.create(dadosPessoa);
@@ -210,21 +213,17 @@ export const PessoasConfig: React.FC = () => {
   
   // Filtrar tipos de usuário baseado nas permissões
   const getTiposUsuarioPermitidos = () => {
-    const userTipo = (user as any)?.tipo_usuario || (user as any)?.tipoUsuario;
-    
-    if (userTipo === TipoUsuario.ADMINISTRADOR || userTipo === TipoUsuario.CPS) {
-      return tiposUsuario; // Admin pode criar qualquer tipo
-    } else if (userTipo === TipoUsuario.DIRETOR) {
-      // Diretor pode criar coordenador, administrativo e docente
-      return tiposUsuario.filter(tipo => 
+    if (canManageSystemConfig) {
+      return tiposUsuario; // Admin/CPS pode criar qualquer tipo
+    }
+    if (isDiretor) {
+      return tiposUsuario.filter(tipo =>
         [TipoUsuario.COORDENADOR, TipoUsuario.ADMINISTRATIVO, TipoUsuario.DOCENTE].includes(tipo.value as TipoUsuario)
       );
-    } else {
-      // Outros podem criar apenas docente e administrativo
-      return tiposUsuario.filter(tipo => 
-        [TipoUsuario.ADMINISTRATIVO, TipoUsuario.DOCENTE].includes(tipo.value as TipoUsuario)
-      );
     }
+    return tiposUsuario.filter(tipo =>
+      [TipoUsuario.ADMINISTRATIVO, TipoUsuario.DOCENTE].includes(tipo.value as TipoUsuario)
+    );
   };
   
   const filteredPessoas = pessoas.filter(pessoa => 
@@ -250,26 +249,9 @@ export const PessoasConfig: React.FC = () => {
     setShowAccessRequests(!showAccessRequests);
   };
 
-  // Verificar se usuário pode gerenciar pessoas
   const userTipo = (user as any)?.tipo_usuario || (user as any)?.tipoUsuario;
-  const canManagePessoas = userTipo && [
-    TipoUsuario.ADMINISTRADOR, 
-    TipoUsuario.CPS, 
-    TipoUsuario.DIRETOR, 
-    TipoUsuario.COORDENADOR
-  ].includes(userTipo);
-
-  console.log("canManagePessoas:", canManagePessoas); // Debug
-  console.log("userTipo:", userTipo); // Debug
-
-  // Verificar se pode ver solicitações de acesso (incluindo diretores)
-  const canViewAccessRequests = userTipo && [
-    TipoUsuario.ADMINISTRADOR, 
-    TipoUsuario.CPS,
-    TipoUsuario.DIRETOR  // Adicionando diretor à lista
-  ].includes(userTipo);
-
-  console.log("canViewAccessRequests:", canViewAccessRequests); // Debug
+  const canManagePessoas = canManageUnitPeople;
+  const canViewAccessRequests = canManageUnitPeople;
 
   // Se não tem usuário ainda
   if (!user) {
