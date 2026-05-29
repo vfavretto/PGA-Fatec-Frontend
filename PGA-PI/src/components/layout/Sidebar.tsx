@@ -27,6 +27,10 @@ export const Sidebar = ({ isExpanded, toggleSidebar }: SidebarProps): JSX.Elemen
     user?.tipo_usuario === 'Administrador' || user?.tipo_usuario === 'CPS';
   const isDiretor = user?.tipo_usuario === 'Diretor';
   const isRegional = user?.tipo_usuario === 'Regional';
+  const canCreateProject =
+    user?.tipo_usuario === 'Coordenador' || user?.tipo_usuario === 'Diretor';
+  const canAccessSettings =
+    user?.tipo_usuario !== 'Docente' && user?.tipo_usuario !== 'Administrativo';
 
   const navItems = [
     {
@@ -50,8 +54,8 @@ export const Sidebar = ({ isExpanded, toggleSidebar }: SidebarProps): JSX.Elemen
       path: `${BASE_ROUTE}projects/list`,
       icon: ClipboardList,
     },
-    // Criar Formulário — oculto para Regional
-    ...(!isRegional
+    // Criar Formulário — somente Coordenador e Diretor
+    ...(canCreateProject
       ? [
           {
             label: "Criar Formulário",
@@ -60,11 +64,13 @@ export const Sidebar = ({ isExpanded, toggleSidebar }: SidebarProps): JSX.Elemen
           },
         ]
       : []),
-    {
-      label: "Configurações",
-      path: `${BASE_ROUTE}settings`,
-      icon: Settings,
-    }
+    ...(canAccessSettings
+      ? [{
+          label: "Configurações",
+          path: `${BASE_ROUTE}settings`,
+          icon: Settings,
+        }]
+      : []),
   ];
 
   // Previne o comportamento padrão e navega programaticamente
@@ -136,7 +142,7 @@ export const Sidebar = ({ isExpanded, toggleSidebar }: SidebarProps): JSX.Elemen
             {isExpanded && (
               <div className="mb-6 pb-6 border-b border-gray-200">
                 <div className="text-center">
-                  <h3 className="text-lg font-semibold text-gray-700">PGA 2025</h3>
+                  <h3 className="text-lg font-semibold text-gray-700">PGA</h3>
                   <p className="text-sm text-gray-500">Bem-vindo, {user?.nome}</p>
                 </div>
               </div>

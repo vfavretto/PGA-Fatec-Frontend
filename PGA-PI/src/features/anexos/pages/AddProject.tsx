@@ -1,13 +1,25 @@
 import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import ProjectForm from "@/features/projects/components/projectForm";
 import { BASE_ROUTE } from "@/lib/config";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 
 export const AddProject = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const { user } = useAuth();
   const typeId = searchParams.get("type");
   const eixoSelecionado = location.state?.eixoTematico;
+
+  const canCreateProject =
+    user?.tipo_usuario === 'Coordenador' || user?.tipo_usuario === 'Diretor';
+
+  useEffect(() => {
+    if (user && !canCreateProject) {
+      navigate(`${BASE_ROUTE}projects/list`, { replace: true });
+    }
+  }, [user, canCreateProject, navigate]);
 
   return (
     <>

@@ -62,8 +62,13 @@ export const Home = (): JSX.Element => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Regional tem view própria — não carrega dados de PGA/projetos aqui
+    // Regional tem view própria
     if (user?.tipo_usuario === 'Regional') return;
+    // CPS e Admin não carregam dados de unidade, mas liberam o loading
+    if (user?.tipo_usuario === 'CPS' || user?.tipo_usuario === 'Administrador') {
+      setLoading(false);
+      return;
+    }
 
     const loadData = async () => {
       try {
@@ -138,7 +143,7 @@ export const Home = (): JSX.Element => {
   return (
     <div className="space-y-6">
       <h1 className="font-extrabold text-black text-2xl md:text-[32px] text-center">
-        Dashboard PGA {anoAtual}
+        Dashboard PGA
       </h1>
 
       {/* Card da Instituição */}

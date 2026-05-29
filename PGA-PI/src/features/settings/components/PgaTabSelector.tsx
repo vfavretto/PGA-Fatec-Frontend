@@ -1,6 +1,7 @@
 import { TabsList, TabsTrigger } from "../../../components/ui/tabs";
-import { Users, Target, List, BarChart3, FileText, AlertCircle, Clock, ShieldCheck } from "lucide-react";
+import { Users, Target, List, BarChart3, FileText, AlertCircle, Clock, ShieldCheck, Building2 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useRef } from "react";
 
 interface PgaTabSelectorProps {
   activeTab: string;
@@ -9,6 +10,7 @@ interface PgaTabSelectorProps {
 
 const ALL_TABS = [
   { id: "pessoas", label: "Pessoas", icon: Users, roles: null },
+  { id: "unidades", label: "Unidades", icon: Building2, roles: ["Administrador", "CPS"] },
   { id: "eixos", label: "Eixos Temáticos", icon: Target, roles: ["Administrador", "CPS"] },
   { id: "temas", label: "Temas", icon: List, roles: ["Administrador", "CPS"] },
   { id: "prioridades", label: "Prioridades", icon: BarChart3, roles: ["Administrador", "CPS"] },
@@ -26,36 +28,68 @@ export const PgaTabSelector = ({ activeTab, onTabChange }: PgaTabSelectorProps) 
     tab.roles === null || tab.roles.includes(tipoUsuario)
   );
 
-  const gridCols = tabs.length <= 4
-    ? "grid-cols-2 sm:grid-cols-4"
-    : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8";
+  const minWidth = tabs.length * 90 + (tabs.length - 1) * 6;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+
+  const onMouseDown = (e: React.MouseEvent) => {
+    isDragging.current = true;
+    startX.current = e.pageX - (scrollRef.current?.offsetLeft ?? 0);
+    scrollLeft.current = scrollRef.current?.scrollLeft ?? 0;
+    if (scrollRef.current) scrollRef.current.style.cursor = "grabbing";
+  };
+
+  const onMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    e.preventDefault();
+    const x = e.pageX - scrollRef.current.offsetLeft;
+    const walk = x - startX.current;
+    scrollRef.current.scrollLeft = scrollLeft.current - walk;
+  };
+
+  const onMouseUp = () => {
+    isDragging.current = false;
+    if (scrollRef.current) scrollRef.current.style.cursor = "grab";
+  };
 
   return (
-    <TabsList className={`mb-6 grid ${gridCols} gap-2 sm:gap-3 bg-transparent w-full`}>
-      {tabs.map(tab => (
-        <TabsTrigger 
-          key={tab.id}
-          value={tab.id} 
-          onClick={() => onTabChange(tab.id)}
-          className={`
-            flex items-center justify-center py-2 sm:py-3 px-2 border rounded-md 
-            transition-all duration-200 text-xs sm:text-sm font-medium 
-            min-h-[50px] sm:min-h-[60px] md:min-h-[65px]
-            hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[#ae0f0a]/20
-            ${activeTab === tab.id 
-              ? "bg-[#ae0f0a]/10 border-[#ae0f0a] text-[#ae0f0a] shadow-sm" 
-              : "bg-white border-gray-200 text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-            }
-          `}
-        >
-          <div className="flex flex-col items-center gap-1 sm:gap-1.5">
-            <tab.icon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="text-[10px] sm:text-xs leading-tight text-center font-medium px-1 break-words">
+    <div
+      ref={scrollRef}
+      className="mb-6 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden select-none"
+      style={{ cursor: "grab" }}
+      onMouseDown={onMouseDown}
+      onMouseMove={onMouseMove}
+      onMouseUp={onMouseUp}
+      onMouseLeave={onMouseUp}
+    >
+      <TabsList
+        className="flex gap-1.5 bg-transparent h-auto p-0 w-full"
+        style={{ minWidth }}
+      >
+        {tabs.map(tab => (
+          <TabsTrigger
+            key={tab.id}
+            value={tab.id}
+            onClick={() => onTabChange(tab.id)}
+            className={[
+              "flex-1 flex flex-col items-center justify-center gap-1",
+              "h-[52px] px-2 border rounded-md transition-all duration-200",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#ae0f0a]/20",
+              activeTab === tab.id
+                ? "bg-[#ae0f0a]/10 border-[#ae0f0a] text-[#ae0f0a] shadow-sm"
+                : "bg-white border-gray-200 text-gray-600 hover:border-gray-300 hover:bg-gray-50 hover:text-gray-800",
+            ].join(" ")}
+          >
+            <tab.icon className="h-[15px] w-[15px] flex-shrink-0" />
+            <span className="text-[10px] leading-tight text-center font-medium whitespace-nowrap overflow-hidden text-ellipsis max-w-full px-1">
               {tab.label}
             </span>
-          </div>
-        </TabsTrigger>
-      ))}
-    </TabsList>
+          </TabsTrigger>
+        ))}
+      </TabsList>
+    </div>
   );
 };

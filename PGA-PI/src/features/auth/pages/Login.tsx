@@ -363,7 +363,7 @@ export const Login = (): JSX.Element => {
 
           {/* Título responsivo */}
           <h1 className="font-['Source_Sans_3',Helvetica] font-extrabold text-white text-2xl md:text-4xl text-center mb-6 md:mb-8 drop-shadow-lg px-2">
-            Plano de Gestão Anual - PGA 2025
+            Plano de Gestão Anual - PGA
           </h1>
 
           {/* Card principal */}

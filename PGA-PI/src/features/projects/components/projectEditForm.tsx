@@ -217,7 +217,7 @@ export const ProjectEditForm: React.FC<ProjectEditFormProps> = ({
           etapa_id: e.etapa_id,
         }));
 
-      await projectService.update(project.acao_projeto_id, {
+      const updatedProject = await projectService.update(project.acao_projeto_id, {
         nome_projeto: formData.nome_projeto,
         o_que_sera_feito: formData.o_que_sera_feito,
         por_que_sera_feito: formData.por_que_sera_feito,
@@ -235,8 +235,7 @@ export const ProjectEditForm: React.FC<ProjectEditFormProps> = ({
         etapas: etapasData,
       } as any);
 
-      const updated = await projectService.getById(project.acao_projeto_id);
-      onSave(updated);
+      onSave(updatedProject);
     } catch (error: any) {
       console.error("Erro ao salvar projeto:", error);
       const errorMessage = error?.response?.data?.message || error?.message || "Erro desconhecido ao salvar projeto";
@@ -617,7 +616,7 @@ export const ProjectEditForm: React.FC<ProjectEditFormProps> = ({
 
               <input
                 type="date"
-                value={etapa.data_verificacao_prevista || ""}
+                value={etapa.data_verificacao_prevista ? new Date(etapa.data_verificacao_prevista).toISOString().split("T")[0] : ""}
                 onChange={(e) =>
                   handleUpdateEtapa(
                     index,
@@ -630,7 +629,7 @@ export const ProjectEditForm: React.FC<ProjectEditFormProps> = ({
 
               <input
                 type="date"
-                value={etapa.data_verificacao_realizada || ""}
+                value={etapa.data_verificacao_realizada ? new Date(etapa.data_verificacao_realizada).toISOString().split("T")[0] : ""}
                 onChange={(e) =>
                   handleUpdateEtapa(
                     index,

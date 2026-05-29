@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
-import { MobileNavigation, MobileFloatingButton } from "./MobileNavigation";
+import { MobileNavigation } from "./MobileNavigation";
 
 export const Layout = (): JSX.Element => {
-  const [isSidebarExpanded, setIsSidebarExpanded] = useState(true);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(window.innerWidth >= 768);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [touchStart, setTouchStart] = useState<number | null>(null);
@@ -26,6 +26,7 @@ export const Layout = (): JSX.Element => {
   }, []);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
   };
 
@@ -40,14 +41,17 @@ export const Layout = (): JSX.Element => {
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
     
-    // Abrir sidebar em swipe da esquerda para a direita
-    if (isRightSwipe && isMobile && !isSidebarExpanded) {
+    // Abrir sidebar apenas quando o swipe começa na borda esquerda (<= 30px)
+    if (isRightSwipe && isMobile && !isSidebarExpanded && (touchStart ?? 0) <= 30) {
       setIsSidebarExpanded(true);
     }
     // Fechar sidebar em swipe da direita para a esquerda
     else if (isLeftSwipe && isMobile && isSidebarExpanded) {
       setIsSidebarExpanded(false);
     }
+
+    setTouchStart(null);
+    setTouchEnd(null);
   };
 
   const toggleSidebar = () => {
@@ -89,9 +93,6 @@ export const Layout = (): JSX.Element => {
         isOpen={isMobileMenuOpen} 
         onClose={() => setIsMobileMenuOpen(false)} 
       />
-      
-      {/* Botão flutuante para mobile */}
-      <MobileFloatingButton onClick={() => setIsMobileMenuOpen(true)} />
     </div>
   );
 };

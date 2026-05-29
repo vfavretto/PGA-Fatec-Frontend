@@ -29,6 +29,10 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
   const isRegional = user?.tipo_usuario === 'Regional';
   const isAdminOrCps = user?.tipo_usuario === 'Administrador' || user?.tipo_usuario === 'CPS';
   const isDiretor = user?.tipo_usuario === 'Diretor';
+  const canCreateProject =
+    user?.tipo_usuario === 'Coordenador' || user?.tipo_usuario === 'Diretor';
+  const canAccessSettings =
+    user?.tipo_usuario !== 'Docente' && user?.tipo_usuario !== 'Administrativo';
 
   const navItems = [
     {
@@ -40,16 +44,18 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
       ? [{ label: "PGAs", path: `${BASE_ROUTE}pgas`, icon: LayoutList }]
       : []),
     { label: "Projetos", path: `${BASE_ROUTE}projects/list`, icon: ClipboardList },
-    ...(!isRegional
+    ...(canCreateProject
       ? [
           { label: "Criar Formulário", path: `${BASE_ROUTE}projects`, icon: PlusCircle },
         ]
       : []),
-    {
-      label: "Configurações",
-      path: `${BASE_ROUTE}settings`,
-      icon: Settings,
-    }
+    ...(canAccessSettings
+      ? [{
+          label: "Configurações",
+          path: `${BASE_ROUTE}settings`,
+          icon: Settings,
+        }]
+      : []),
   ];
 
   const handleNavigation = (path: string) => {
@@ -116,7 +122,7 @@ export const MobileNavigation: React.FC<MobileNavigationProps> = ({
         {/* Footer do menu */}
         <div className="p-6 border-t border-gray-200">
           <div className="text-center">
-            <p className="text-sm text-gray-500">PGA 2025</p>
+            <p className="text-sm text-gray-500">PGA</p>
             <p className="text-xs text-gray-400">Fatec Votorantim</p>
           </div>
         </div>

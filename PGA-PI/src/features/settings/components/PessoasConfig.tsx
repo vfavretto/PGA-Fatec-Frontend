@@ -38,6 +38,9 @@ export const PessoasConfig: React.FC = () => {
   
   const [searchTerm, setSearchTerm] = useState('');
   const [filterUnidadeId, setFilterUnidadeId] = useState<string | undefined>(undefined);
+  const [filterRegionalId, setFilterRegionalId] = useState<string | undefined>(undefined);
+  const [filterUnidades, setFilterUnidades] = useState<any[]>([]);
+  const [filterOnlyCPS, setFilterOnlyCPS] = useState(false);
   const [showAccessRequests, setShowAccessRequests] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState<number>(0);
   const [loadingRequests, setLoadingRequests] = useState(false);
@@ -320,6 +323,18 @@ export const PessoasConfig: React.FC = () => {
     loadUnidadesPorRegional(selectedRegionalId);
   }, [selectedRegionalId]);
 
+  // Carrega unidades para os filtros de exibição (CPS/Admin)
+  useEffect(() => {
+    if (!filterRegionalId) {
+      setFilterUnidades([]);
+      setFilterUnidadeId(undefined);
+      return;
+    }
+    api.get(API_ENDPOINTS.REGIONAL_UNIDADES, { params: { regional_id: filterRegionalId } })
+      .then(r => setFilterUnidades(Array.isArray(r.data) ? r.data : []))
+      .catch(() => setFilterUnidades([]));
+  }, [filterRegionalId]);
+
   const handleAddPessoa = async () => {
     if (!novaPessoa.nome || !novaPessoa.email) {
       toast({
@@ -530,15 +545,23 @@ export const PessoasConfig: React.FC = () => {
   };
 
   const getUnidadeNome = (pessoa: User) => {
-    if (!pessoa.unidades || pessoa.unidades.length === 0) {
-      return 'Unidade não definida';
+    if (pessoa.unidades && pessoa.unidades.length > 0) {
+      if (pessoa.unidades[0].unidade && pessoa.unidades[0].unidade.nome_unidade) {
+        return pessoa.unidades[0].unidade.nome_unidade;
+      }
+      return 'Nome não disponível';
     }
 
-    if (pessoa.unidades[0].unidade && pessoa.unidades[0].unidade.nome_unidade) {
-      return pessoa.unidades[0].unidade.nome_unidade;
+    // Pessoa sem unidade — verificar vínculo regional
+    const regionaisPessoa = (pessoa as any).pessoaRegionais;
+    if (regionaisPessoa && regionaisPessoa.length > 0) {
+      const regional = regionaisPessoa[0].regional;
+      if (regional) {
+        return regional.nome_regional || regional.nome || 'Regional sem nome';
+      }
     }
-    
-    return 'Nome não disponível';
+
+    return 'Unidade não definida';
   };
 
   const getRegionalNameById = (id?: number) => {
@@ -578,8 +601,12 @@ export const PessoasConfig: React.FC = () => {
   const getTiposUsuarioPermitidos = () => {
     const userTipo = (user as any)?.tipo_usuario || (user as any)?.tipoUsuario;
     
-    if (userTipo === TipoUsuario.ADMINISTRADOR || userTipo === TipoUsuario.CPS) {
+    if (userTipo === TipoUsuario.ADMINISTRADOR) {
       return tiposUsuario;
+    } else if (userTipo === TipoUsuario.CPS) {
+      return tiposUsuario.filter(tipo =>
+        ![TipoUsuario.ADMINISTRADOR, TipoUsuario.CPS].includes(tipo.value as TipoUsuario)
+      );
     } else if (userTipo === TipoUsuario.REGIONAL) {
       return tiposUsuario.filter(tipo => 
         [TipoUsuario.DIRETOR, TipoUsuario.COORDENADOR, TipoUsuario.ADMINISTRATIVO, TipoUsuario.DOCENTE].includes(tipo.value as TipoUsuario)
@@ -601,6 +628,38 @@ export const PessoasConfig: React.FC = () => {
     const tipo = (pessoa.tipo_usuario || '').toString().toLowerCase();
     const term = (searchTerm || '').toLowerCase();
     const matchesSearch = nome.includes(term) || email.includes(term) || tipo.includes(term);
+
+    // Filtro "somente CPS/Administrador" — sem vínculo de unidade
+    if (filterOnlyCPS) {
+      return matchesSearch && (
+        pessoa.tipo_usuario === TipoUsuario.ADMINISTRADOR ||
+        pessoa.tipo_usuario === TipoUsuario.CPS
+      );
+    }
+
+    // Filtro "somente regional" — apenas vínculo direto com a regional, sem unidades
+    if (filterUnidadeId === '__regional__' && filterRegionalId) {
+      const regionaisPessoa = (pessoa as any).pessoaRegionais ?? [];
+      return matchesSearch && regionaisPessoa.some(
+        (r: any) => String(r.regional_id) === String(filterRegionalId)
+      );
+    }
+
+    // Filtro por unidade específica
+    if (filterUnidadeId) {
+      return matchesSearch && pessoa.unidades?.some(
+        (u: any) => String(u.unidade_id ?? u.unidade?.unidade_id) === String(filterUnidadeId)
+      );
+    }
+
+    // Filtro somente por regional (todas as unidades dela)
+    if (filterRegionalId) {
+      return matchesSearch && pessoa.unidades?.some(
+        (u: any) => String(u.unidade?.regional_id ?? u.regional_id) === String(filterRegionalId)
+      );
+    }
+
+    // Filtro legado por filterUnidadeId sem regional (Regional user)
     const matchesUnidade = !filterUnidadeId || pessoa.unidades?.some(
       (u: any) => (u.unidade_id ?? u.unidade?.unidade_id) === filterUnidadeId
     );
@@ -629,7 +688,6 @@ export const PessoasConfig: React.FC = () => {
     TipoUsuario.ADMINISTRADOR, 
     TipoUsuario.CPS, 
     TipoUsuario.DIRETOR, 
-    TipoUsuario.COORDENADOR,
   ].includes(userTipo);
 
   const canViewAccessRequests = userTipo && [
@@ -694,7 +752,7 @@ export const PessoasConfig: React.FC = () => {
       </div>
 
       {/* Card que alterna entre Adicionar Pessoas e Solicitações de Acesso */}
-      {userTipo !== TipoUsuario.REGIONAL && <Card className="border border-gray-200 shadow-sm">
+      {canManagePessoas && userTipo !== TipoUsuario.REGIONAL && <Card className="border border-gray-200 shadow-sm">
         <div className="p-4 sm:p-5">
           {!showAccessRequests ? (
             <>
@@ -924,6 +982,52 @@ export const PessoasConfig: React.FC = () => {
             </h3>
             
             <div className="flex gap-2 flex-wrap">
+              {(userTipo === TipoUsuario.ADMINISTRADOR || userTipo === TipoUsuario.CPS) && (
+                <>
+                  <select
+                    value={filterRegionalId ?? ''}
+                    onChange={e => {
+                      setFilterRegionalId(e.target.value || undefined);
+                      setFilterUnidadeId(undefined);
+                      if (e.target.value) setFilterOnlyCPS(false);
+                    }}
+                    disabled={filterOnlyCPS}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#ae0f0a] disabled:opacity-40"
+                  >
+                    <option value="">Todas as regionais</option>
+                    {regionais.map(r => (
+                      <option key={r.regional_id} value={r.regional_id}>{r.nome}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterUnidadeId ?? ''}
+                    onChange={e => setFilterUnidadeId(e.target.value || undefined)}
+                    disabled={filterOnlyCPS || !filterRegionalId}
+                    className="border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-700 focus:outline-none focus:ring-1 focus:ring-[#ae0f0a] disabled:opacity-40"
+                  >
+                    <option value="">Todas as unidades</option>
+                    <option value="__regional__">Somente Regional</option>
+                    {filterUnidades.map(u => (
+                      <option key={u.unidade_id} value={u.unidade_id}>{u.nome_unidade}</option>
+                    ))}
+                  </select>
+                  <label className="flex items-center gap-2 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white text-gray-700 cursor-pointer select-none hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={filterOnlyCPS}
+                      onChange={e => {
+                        setFilterOnlyCPS(e.target.checked);
+                        if (e.target.checked) {
+                          setFilterRegionalId(undefined);
+                          setFilterUnidadeId(undefined);
+                        }
+                      }}
+                      className="accent-[#ae0f0a]"
+                    />
+                    Somente CPS
+                  </label>
+                </>
+              )}
               {userTipo === TipoUsuario.REGIONAL && unidades.length > 0 && (
                 <select
                   value={filterUnidadeId ?? ''}

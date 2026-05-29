@@ -6,6 +6,7 @@ import { useNavigate } from "react-router-dom";
 import { Modal } from "@/components/ui/modal";
 import { Button } from "@/components/ui/button";
 import { KeyboardShortcuts, AccessibilityHelp } from "@/components/accessibility/KeyboardShortcuts";
+import { VoiceCommandButton } from "@/components/accessibility/VoiceCommandButton";
 import { type Theme } from "@/utils/theme";
 
 interface HeaderProps {
@@ -129,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isMobile, isExpan
     const isLeftSwipe = distance > 50;
     const isRightSwipe = distance < -50;
     
-    if (isRightSwipe && isMobile && !isExpanded) {
+    if (isRightSwipe && isMobile && !isExpanded && (touchStart ?? 0) <= 30) {
       toggleSidebar();
       playSound('click');
     }
@@ -196,7 +197,7 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isMobile, isExpan
       </a>
 
       <header 
-        className={`sticky top-0 bg-white border-b border-gray-200 h-16 z-40 transition-all duration-300 ${showHeader ? 'transform-none' : '-translate-y-full'} ${!isMobile && isExpanded ? 'ml-60' : 'ml-20'}`}
+        className={`sticky top-0 bg-white border-b border-gray-200 h-16 z-40 transition-all duration-300 ${showHeader ? 'transform-none' : '-translate-y-full'} ${isMobile ? 'ml-0' : isExpanded ? 'ml-60' : 'ml-20'}`}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -221,13 +222,58 @@ export const Header: React.FC<HeaderProps> = ({ toggleSidebar, isMobile, isExpan
                 <ChevronRight className="h-5 w-5 text-gray-700" />
               )}
             </button>
-            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">PGA 2025</h1>
+            <h1 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">PGA</h1>
           </div>
 
           <div className="flex items-center space-x-2 sm:space-x-4 relative">
             <span className="text-xs sm:text-sm text-gray-600 hidden sm:inline-block truncate max-w-[100px] md:max-w-none">
               {user?.nome}
             </span>
+
+            {/* Botão de comando de voz */}
+            <VoiceCommandButton
+              onDarkMode={() => handleThemeChange('dark')}
+              onLightMode={() => handleThemeChange('light')}
+              onSystemMode={() => handleThemeChange('system')}
+              onIncreaseFontSize={() => handleAccessibilityAction(increaseFontSize, 'Fonte aumentada')}
+              onDecreaseFontSize={() => handleAccessibilityAction(decreaseFontSize, 'Fonte diminuída')}
+              onResetFontSize={() => handleAccessibilityAction(resetFontSize, 'Fonte restaurada')}
+              onToggleHighContrast={(direction) => {
+                if (direction === 'enable' && accessibilitySettings.highContrast) {
+                  announceToScreenReader('Alto contraste já está ativado');
+                  return;
+                }
+                if (direction === 'disable' && !accessibilitySettings.highContrast) {
+                  announceToScreenReader('Alto contraste já está desativado');
+                  return;
+                }
+                handleAccessibilityAction(toggleHighContrast, accessibilitySettings.highContrast ? 'Alto contraste desativado' : 'Alto contraste ativado');
+              }}
+              onToggleReduceMotion={(direction) => {
+                if (direction === 'enable' && accessibilitySettings.reduceMotion) {
+                  announceToScreenReader('Redução de movimento já está ativada');
+                  return;
+                }
+                if (direction === 'disable' && !accessibilitySettings.reduceMotion) {
+                  announceToScreenReader('Redução de movimento já está desativada');
+                  return;
+                }
+                handleAccessibilityAction(toggleReduceMotion, accessibilitySettings.reduceMotion ? 'Redução de movimento desativada' : 'Redução de movimento ativada');
+              }}
+              onToggleSound={(direction) => {
+                if (direction === 'enable' && accessibilitySettings.soundEnabled) {
+                  announceToScreenReader('Sons do sistema já estão ativados');
+                  return;
+                }
+                if (direction === 'disable' && !accessibilitySettings.soundEnabled) {
+                  announceToScreenReader('Sons do sistema já estão desativados');
+                  return;
+                }
+                handleAccessibilityAction(toggleSound, accessibilitySettings.soundEnabled ? 'Sons do sistema desativados' : 'Sons do sistema ativados');
+              }}
+              onOpenAccessibility={handleToggleAccessibilityModal}
+              onAnnounce={announceToScreenReader}
+            />
             <div 
               className="h-8 w-8 rounded-full bg-[#ae0f0a] text-white flex items-center justify-center cursor-pointer hover:bg-[#8e0c08] transition-colors flex-shrink-0 accessibility-focus"
               onClick={handleUserMenuClick}

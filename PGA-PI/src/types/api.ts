@@ -229,8 +229,8 @@ export interface TipoVinculoHAE {
 }
 
 export interface CreateAttachmentDto {
-  etapa_processo_id?: string;
-  entregavel_id?: string;
+  etapa_processo_id: string;
+  entregavel_id: string;
   item: string;
   descricao: string;
   quantidade: number;

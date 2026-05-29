@@ -5,6 +5,7 @@ import { BASE_ROUTE } from "@/lib/config";
 import { eixoTematicoService, entregaveisService } from "@/services/commonServices";
 import { EixoTematico } from "@/types/api";
 import { Loader2, AlertCircle } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Entregavel {
   id: number;
@@ -14,7 +15,17 @@ interface Entregavel {
 
 export const SelectAnexo = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<"projects" | "anexos">("projects");
+  const { user } = useAuth();
+  const canCreateProject =
+    user?.tipo_usuario === 'Coordenador' || user?.tipo_usuario === 'Diretor';
+
+  const [activeTab, setActiveTab] = useState<"projects" | "anexos">(canCreateProject ? "projects" : "anexos");
+
+  useEffect(() => {
+    if (user && !canCreateProject) {
+      navigate(`${BASE_ROUTE}projects/list`, { replace: true });
+    }
+  }, [user, canCreateProject, navigate]);
 
   const [eixosTematicos, setEixosTematicos] = useState<EixoTematico[]>([]);
   const [loadingEixos, setLoadingEixos] = useState(false);
@@ -84,16 +95,18 @@ export const SelectAnexo = () => {
 
       {/* Sistema de Tabs */}
       <div className="flex border-b mb-8">
-        <button
-          className={`px-6 py-3 font-medium text-lg transition-colors ${
-            activeTab === "projects"
-              ? "border-b-2 border-[#ae0f0a] text-[#ae0f0a] font-semibold"
-              : "text-gray-500 hover:text-gray-700"
-          }`}
-          onClick={() => setActiveTab("projects")}
-        >
-          Projetos
-        </button>
+        {canCreateProject && (
+          <button
+            className={`px-6 py-3 font-medium text-lg transition-colors ${
+              activeTab === "projects"
+                ? "border-b-2 border-[#ae0f0a] text-[#ae0f0a] font-semibold"
+                : "text-gray-500 hover:text-gray-700"
+            }`}
+            onClick={() => setActiveTab("projects")}
+          >
+            Projetos
+          </button>
+        )}
         <button
           className={`px-6 py-3 font-medium text-lg transition-colors ${
             activeTab === "anexos"

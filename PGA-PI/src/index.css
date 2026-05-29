@@ -76,3 +76,12 @@
     transition: top 0.2s ease;
   }
 }
+
+/* Fora de qualquer @layer — prioridade máxima sobre CSS layered do Tailwind.
+   Remove o foco visual ao clicar com mouse; mantém apenas para navegação por teclado. */
+*:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+  --tw-ring-shadow: 0 0 #0000 !important;
+  --tw-ring-offset-shadow: 0 0 #0000 !important;
+}

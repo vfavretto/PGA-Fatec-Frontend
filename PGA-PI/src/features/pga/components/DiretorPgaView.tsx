@@ -159,9 +159,13 @@ export function DiretorPgaView() {
                   </div>
                 </div>
 
-                {/* Parecer regional se reprovado */}
-                {pga.status === 'Reprovado' && pga.parecer_regional && (
-                  <div className="mx-6 mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-800">
+                {/* Parecer regional se reprovado ou aprovado com comentário */}
+                {(pga.status === 'Reprovado' || pga.status === 'Aprovado') && pga.parecer_regional && (
+                  <div className={`mx-6 mb-4 rounded-lg px-4 py-3 text-sm border ${
+                    pga.status === 'Reprovado'
+                      ? 'bg-red-50 border-red-200 text-red-800'
+                      : 'bg-green-50 border-green-200 text-green-800'
+                  }`}>
                     <p className="font-semibold mb-1">Parecer da Regional:</p>
                     <p>{pga.parecer_regional}</p>
                   </div>

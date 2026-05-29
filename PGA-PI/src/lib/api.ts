@@ -31,7 +31,8 @@ api.interceptors.response.use(
       !originalRequest._retry &&
       !originalRequest.url?.includes('/auth/refresh') &&
       !originalRequest.url?.includes('/auth/login') &&
-      !window.location.pathname.includes('/login')
+      !window.location.pathname.includes('/login') &&
+      !window.location.pathname.includes('/reset-password')
     ) {
       // If a refresh is already in progress, queue this request until it resolves
       if (isRefreshing) {

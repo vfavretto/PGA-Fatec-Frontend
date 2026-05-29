@@ -31,6 +31,8 @@ interface PgaBasica {
 export const Projects = (): JSX.Element => {
   const { user } = useAuth();
   const isRegional = user?.tipo_usuario === 'Regional';
+  const canEditProject =
+    user?.tipo_usuario === 'Coordenador' || user?.tipo_usuario === 'Diretor';
 
   const [expandedProjectId, setExpandedProjectId] = useState<string | null>(null);
   const [projetos, setProjetos] = useState<AcaoProjeto[]>([]);
@@ -213,19 +215,37 @@ export const Projects = (): JSX.Element => {
   };
 
   const calculateProgress = (project: AcaoProjeto): number => {
-    if (!project.data_inicio || !project.data_final) return 0;
-    
-    const now = new Date();
-    const start = new Date(project.data_inicio);
-    const end = new Date(project.data_final);
-    
-    if (now < start) return 0;
-    if (now > end) return 100;
-    
-    const total = end.getTime() - start.getTime();
-    const elapsed = now.getTime() - start.getTime();
-    
-    return Math.round((elapsed / total) * 100);
+    const etapas = project.etapas ?? [];
+    const totalEtapas = etapas.length;
+    const concluidasEtapas = etapas.filter(e => e.status_verificacao === 'OK').length;
+
+    if (totalEtapas > 0 && concluidasEtapas === totalEtapas) return 100;
+
+    const progressoEtapas = totalEtapas > 0
+      ? Math.round((concluidasEtapas / totalEtapas) * 100)
+      : 0;
+
+    let progressoTempo = 0;
+    if (project.data_inicio && project.data_final) {
+      const now = new Date();
+      const start = new Date(project.data_inicio);
+      const end = new Date(project.data_final);
+      const total = end.getTime() - start.getTime();
+      const elapsed = now.getTime() - start.getTime();
+      if (total > 0) {
+        progressoTempo = Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
+      } else {
+        progressoTempo = now >= end ? 100 : 0;
+      }
+    }
+
+    if (progressoEtapas > 0 && progressoTempo > 0) {
+      return Math.round(progressoEtapas * 0.6 + progressoTempo * 0.4);
+    } else if (progressoEtapas > 0) {
+      return progressoEtapas;
+    } else {
+      return progressoTempo;
+    }
   };
 
   if (loading) {
@@ -379,12 +399,20 @@ export const Projects = (): JSX.Element => {
                     >
                       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                         <div className="flex-1 min-w-0">
-                          <h3 className="text-base sm:text-xl font-semibold text-gray-800">{project.tema?.descricao || 'Sem tema'}</h3>
-                            <p className="text-gray-600 mt-1 text-sm">
+                          <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-0.5">
+                            Projeto {project.codigo_projeto || 'S/N'}
+                          </p>
+                          <h3 className="text-base sm:text-xl font-semibold text-gray-800 leading-snug">
+                            {project.nome_projeto || 'Sem nome'}
+                          </h3>
+                          <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-0.5 text-sm text-gray-500">
+                            <span><span className="font-medium text-gray-600">Eixo:</span> {project.eixo?.nome_eixo || 'N/A'}</span>
+                            <span><span className="font-medium text-gray-600">Tema:</span> {project.tema?.descricao || 'N/A'}</span>
+                          </div>
+                          <p className="text-gray-500 mt-1 text-sm">
                             Prazo Final: {project.data_final ? new Date(project.data_final).toLocaleDateString() : 'Não definido'}
                           </p>
-                          <div className="mt-2 text-sm">
-                            <p><span className="font-semibold">Eixo Temático:</span> {project.eixo?.nome_eixo || 'N/A'}</p>
+                          <div className="mt-1 text-sm">
                             <p><span className="font-semibold">Prioridade:</span> {project.prioridade?.descricao || 'N/A'}</p>
                           </div>
                         </div>
@@ -394,7 +422,7 @@ export const Projects = (): JSX.Element => {
                           >
                             Em Andamento
                           </span>
-                          {!isRegional && (
+                          {canEditProject && (
                           <button
                             onClick={(e) => handleEdit(e, project.acao_projeto_id)}
                             className="flex items-center px-3 py-1 text-sm font-medium text-blue-700 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors duration-200"
@@ -508,12 +536,11 @@ export const Projects = (): JSX.Element => {
           {editingProject && (
             <ProjectEditForm
               project={editingProject}
-              onSave={async (updated) => {
+              onSave={(updated) => {
                 setProjectModalOpen(false);
                 setEditingProject(null);
                 toast({title: 'Sucesso', description: 'Projeto atualizado com sucesso.', variant: 'success'});
-                const refreshed = await projectService.getAll();
-                setProjetos(refreshed);
+                setProjetos(prev => prev.map(p => p.acao_projeto_id === updated.acao_projeto_id ? updated : p));
               }}
               onCancel={() => {
                 setProjectModalOpen(false);
@@ -539,7 +566,7 @@ export const Projects = (): JSX.Element => {
               </div>
 
               <div>
-                {!isEditing ? (
+                {canEditProject && (!isEditing ? (
                   <button
                     onClick={() => setIsEditing(true)}
                     className="flex items-center px-2 py-1 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
@@ -551,7 +578,7 @@ export const Projects = (): JSX.Element => {
                   <button className="flex items-center px-2 py-1 text-sm font-medium text-white bg-gray-400 rounded-md cursor-not-allowed" disabled aria-label="Editando"> 
                     Editando
                   </button>
-                )}
+                ))}
               </div>
             </div>
 

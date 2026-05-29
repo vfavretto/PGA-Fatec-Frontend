@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
   REGIONAL_PGAS: `${API_URL}/regional/pgas`,
   REGIONAL_PROJETOS: `${API_URL}/regional/projetos`,
   USERS_BY_UNIDADE: `${API_URL}/users/by-unidade`,
+  UNITS: `${API_URL}/unit`,
   THEMES: `${API_URL}/themes`,
   THEMATIC_AXIS: `${API_URL}/thematic-axis`,
   PROJECTS: `${API_URL}/project1`,
