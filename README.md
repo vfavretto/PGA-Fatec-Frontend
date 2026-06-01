@@ -18,6 +18,9 @@
 
 <p align="center">
     <a href="#sobre">Sobre</a>  |  
+    <a href="#doc">Documentação</a>  | 
+    <a href="#cvoz">Comando de Voz</a>  | 
+    <a href="#chatbot">Chatbot</a>  |  
     <a href="#mer">MER & Requisitos</a>  |  
     <a href="#tecnologias">Tecnologias</a>  |  
     <a href="#equipe">Equipe</a>
@@ -27,8 +30,44 @@
   
 ## :page_facing_up: Sobre o Projeto
   Projeto de plataforma digital que centraliza e facilita o Planejamento de Gestão Anual (PGA) das Faculdades de Tecnologia (Fatecs), promovendo uma gestão mais eficiente, organizada e colaborativa. A plataforma permite que as equipes gestoras registrem, monitorem e avaliem ações e projetos estratégicos, alinhando-os às prioridades institucionais do Centro Paula Souza e às demandas locais da unidade. A inclusão de diferentes atores, como coordenadores, docentes e parceiros, amplia o alcance do projeto, transformando-o em um hub abrangente para a integração de esforços em prol da excelência acadêmica, inovação e responsabilidade social. O PGA Digital não apenas simplifica processos, mas aspira a ser um catalisador para transformações positivas no ecossistema educacional, unindo diversos agentes para enfrentar os desafios contemporâneos de maneira colaborativa e inovadora.
+  
 
-### :link: Documentação disponível para visualização em [Plano de Gestão Anual Fatec](https://docs.google.com/document/d/1CrhBWIOPThfBXkwcjoDVkheMd6tgXGGg/edit?usp=sharing&ouid=114413335327908348110&rtpof=true&sd=true).
+<span id="doc">
+
+## :link: Documentação disponível para visualização em:
+<div align="center">
+  
+[Documentação Técnica](https://docs.google.com/document/d/1CrhBWIOPThfBXkwcjoDVkheMd6tgXGGg/edit?usp=sharing&ouid=114413335327908348110&rtpof=true&sd=true) | 
+[Documentação de Usuário](https://docs.google.com/document/d/14UyFDQkO1A2INaqQ9gPYzy7U2LSwY7uz/edit?usp=sharing&ouid=114413335327908348110&rtpof=true&sd=true) | 
+[Documentação de Testes](https://docs.google.com/document/d/1MAURoKSf-Gnku96ofkAH-MQxcYyKtxew/edit?usp=sharing&ouid=114413335327908348110&rtpof=true&sd=true) 
+
+<br>
+</div>
+
+
+<span id="cvoz">
+  
+## 🎤 Comando de Voz
+O comando de voz foi implementado para acessibilidade, a partir dele podemos:
+
+* Mudar o tamanho da fonte
+* Alterar o tema para claro/escuro
+* Ativar o Alto Contraste
+* Reduzir Animações
+* Ativar ou desativar os sons do sistema.
+
+![Comando de Voz](https://i.imgur.com/JwKMS3c.png)
+<br>
+
+→ [Voltar ao topo](#topo)
+
+<span id="chatbot">
+  
+## 🤖 Chatbot
+
+Foi desenvolvido um Assistente PGA para facilitar a utilização por meio de Chatbot:
+
+![Chatbot](https://i.imgur.com/1mT0eN8.jpeg)
 
 → [Voltar ao topo](#topo)
 
